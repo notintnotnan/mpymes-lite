@@ -1,7 +1,7 @@
 from typing import List
 from datetime import datetime
 
-from sqlalchemy import ForeignKey, Enum, String, Numeric, DateTime, func
+from sqlalchemy import Column, Table, ForeignKey, Enum, String, Numeric, DateTime, func, select
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.ext.hybrid import hybrid_property
 
@@ -27,7 +27,13 @@ class Account(Base):
     account_type:Mapped[str] = mapped_column(Enum(AccountTypes))
 
     business:Mapped[Business] = relationship(back_populates="accounts")
-    movements:Mapped[List[Movement]] = relationship(back_populates="account") 
+    movements:Mapped[List[Movement]] = relationship(back_populates="account")
+
+class Tax(Base):
+    __tablename__ = "business_tax"
+
+    description:Mapped[str] = mapped_column(String)
+    rate:Mapped[float] = mapped_column(Numeric(scale=6))
 
 class MovementCategory(Base):
     __tablename__ = "business_movement_category"
@@ -35,10 +41,18 @@ class MovementCategory(Base):
     description:Mapped[str] = mapped_column(String)
     movement_type:Mapped[str] = mapped_column(Enum(MovementTypes))
 
+movement_taxes = Table(
+    "business_movement_taxes",
+    Base.metadata,
+    Column("tax_id", ForeignKey("business_tax.id")),
+    Column("movement_id", ForeignKey("business_movement.id"))
+)
+
 class Movement(Base):
+    # TODO: Implement discounts on value and tax calculations
     __tablename__ = "business_movement"
 
-    net_value:Mapped[float] = mapped_column(Numeric(scale=3))
+    base_value:Mapped[float] = mapped_column(Numeric(scale=3))
     movement_type:Mapped[str] = mapped_column(Enum(MovementTypes))
     movement_category_id:Mapped[int] = mapped_column(ForeignKey("business_movement_category.id"))
     account_id:Mapped[int] = mapped_column(ForeignKey("business_account.id"))
@@ -48,7 +62,37 @@ class Movement(Base):
 
     movement_category:Mapped[MovementCategory] = relationship()
     account:Mapped[Account] = relationship(back_populates="movements")
+    taxes:Mapped[List[Tax]] = relationship(secondary=movement_taxes)
 
     @hybrid_property
-    def value(self) -> float:
-        return -1*self.net_value if self.movement_type == MovementTypes.DEBIT else self.net_value
+    def all_taxes(self):
+        return self.taxes
+
+    @all_taxes.expression
+    def all_taxes(cls):
+        return (
+            select(movement_taxes.c.tax_id)
+            .where(movement_taxes.c.movement_id == cls.id)
+            .scalar_subquery()
+        )
+
+    @hybrid_property
+    def total_taxes(self):
+        return sum(tax.rate * self.base_value for tax in self.taxes)
+
+    @total_taxes.expression
+    def total_taxes(cls):
+        return (
+            select(func.coalesce(func.sum(Tax.rate) * cls.basevalue,0))
+            .join(movement_taxes, movement_taxes.c.tax_id == Tax.id)
+            .where(movement_taxes.c.movement_id == cls.id)
+            .scalar_subquery()
+        )
+
+    @hybrid_property
+    def total_value(self):
+        return self.base_value + self.total_taxes
+
+    @total_value.expression
+    def total_value(cls):
+        return cls.base_value + cls.total_taxes
