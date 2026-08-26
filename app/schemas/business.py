@@ -26,6 +26,8 @@ class Account(Base):
     business_id:Mapped[int] = mapped_column(ForeignKey("business_main.id"))
     account_type:Mapped[str] = mapped_column(Enum(AccountTypes))
 
+    created_at:Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
     business:Mapped[Business] = relationship(back_populates="accounts")
     movements:Mapped[List[Movement]] = relationship(back_populates="account")
 
