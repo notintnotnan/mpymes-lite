@@ -36,6 +36,10 @@ class Tax(Base):
 
     description:Mapped[str] = mapped_column(String)
     rate:Mapped[float] = mapped_column(Numeric(scale=6))
+    valid_from:Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    valid_until:Mapped[datetime] = mapped_column(DateTime(timezone=True),nullable=True)
+
+    created_at:Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 class MovementCategory(Base):
     __tablename__ = "business_movement_category"
