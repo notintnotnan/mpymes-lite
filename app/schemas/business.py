@@ -89,7 +89,7 @@ class Movement(Base):
     @total_taxes.expression
     def total_taxes(cls):
         return (
-            select(func.coalesce(func.sum(Tax.rate) * cls.basevalue,0))
+            select(func.coalesce(func.sum(Tax.rate) * cls.base_value,0))
             .join(movement_taxes, movement_taxes.c.tax_id == Tax.id)
             .where(movement_taxes.c.movement_id == cls.id)
             .scalar_subquery()
