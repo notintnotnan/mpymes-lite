@@ -1,0 +1,2 @@
+class DuplicateRegistryError(Exception):
+    pass
