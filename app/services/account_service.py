@@ -9,7 +9,7 @@ class AccountService(BaseService):
         return self._db.query(Account).filter(Account.business_id == business_id).all()
 
     def get_account(self, account_id:int) -> Account | None:
-        return self._db.query(Account).filter(Account.id = account_id).first()
+        return self._db.query(Account).filter(Account.id == account_id).first()
 
     def _get_account_by_number(self, account_number:int) -> Account | None:
         return self._db.query(Account).filter(Account.number == account_number).first()
