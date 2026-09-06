@@ -17,7 +17,7 @@ class BusinessRead(Business):
     model_config = ConfigDict(from_attributes=True)
 
 class BusinessUpdate(Business):
-    id:int
+    pass
 
 class BusinessDelete(BaseModel):
     id:int

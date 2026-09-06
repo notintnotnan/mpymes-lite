@@ -24,12 +24,8 @@ class AccountRead(Account):
 
     model_config = ConfigDict(from_attributes=True)
 
-class AccountDetailRead(AccountRead):
-    business: Optional["BusinessRead"] = None
-    movements: List["MovementRead"] = []
-
 class AccountUpdate(Account):
-    id:int
+    pass
 
 class AccountDelete(BaseModel):
     id:int
